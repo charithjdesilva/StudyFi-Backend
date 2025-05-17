@@ -190,6 +190,8 @@ The User and Group Service interacts with the MySQL database, primarily managing
 | `user_id`     | BIGINT         | Foreign Key referencing the `user` table |
 | `group_id`    | BIGINT         | Foreign Key referencing the `study_group` table |
 
+<img src="img.png" align="center" alt="user and group db" width="600"/>
+
 ### Technologies and Components
 
 *   **Spring Data JPA:** Used for interacting with the MySQL database to persist user and group data.
@@ -247,36 +249,67 @@ This service is built with **Spring Boot** and utilizes **Spring Data JPA** for 
 
 ### Database Structures
 
-The Content and News Service primarily manages the following tables in the MySQL database:
+The Content and News Service interacts with the MySQL database, managing the following tables for various types of content, posts, likes, and comments:
+
+**`content` Table**
+
+| Column Name   | Data Type   | Description                                                                    |
+|---------------|-------------|--------------------------------------------------------------------------------|
+| `id`          | INT         | Primary Key, auto-generated                                                    |
+| `title`       | VARCHAR     | Title of the content                                                           |
+| `content`     | TEXT        | Content text (optional, can be used for description)                           |
+| `author`      | VARCHAR     | Author of the content (user who uploaded) - stored as a String               |
+| `groupIds`    | (See note)  | List of Group IDs where the content is shared                                  |
+| `createdAt`   | DATE        | Timestamp when the content was created/posted                                  |
+| `fileURL`     | VARCHAR     | URL to the file stored on Cloudinary or other file storage                   |
 
 **`news` Table**
 
-| Column Name   | Data Type   | Description                                            |
-|---------------|-------------|--------------------------------------------------------|
-| `id`          | BIGINT      | Primary Key                                            |
-| `headline`    | VARCHAR     |                                                        |
-| `content`     | TEXT        |                                                        |
-| `author`      | BIGINT      | Foreign Key referencing the `user` table               |
-| `groupIds`    | VARCHAR/TEXT| Stores IDs of groups the content is associated with (format varies) |
-| `createdAt`   | DATETIME    | Timestamp of content creation                          |
-| `imageUrl`    | VARCHAR     | URL to an image associated with the content stored on Cloudinary |\n
-**`likes` Table**
+| Column Name   | Data Type   | Description                                                                 |
+|---------------|-------------|-----------------------------------------------------------------------------|
+| `id`          | INT         | Primary Key, auto-generated                                                 |
+| `headline`    | VARCHAR     | Title or headline of the news                                               |
+| `content`     | TEXT        | Body of the news (text or URL)                                              |
+| `author`      | VARCHAR     | Author of the news (user who posted) - stored as a String                   |
+| `groupIds`    | (See note)  | List of Group IDs where the news is shared                                  |
+| `createdAt`   | DATE        | Timestamp of content creation                                               |
+| `imageUrl`    | VARCHAR     | URL of the image associated with the news (optional) stored on Cloudinary   |
 
-| Column Name | Data Type  | Description                           |
-|-------------|------------|---------------------------------------|
-| `user_id`   | BIGINT     | Foreign Key referencing the `user` table  |
-| `content_id`| BIGINT     | Foreign Key referencing the `news` table  |
-| `createdAt` | DATETIME   | Timestamp of when the like was recorded   |
+**Note on `groupIds`:**
 
-**`comments` Table**
+For both `content` and `news` tables, the `groupIds` field is handled using `@ElementCollection`. This results in separate join tables (named `content_groupIds` and `news_groupIds`) to store the relationship between the content/news item and the associated group IDs. These join tables usually have columns referencing the content/news ID and the group ID.
 
-| Column Name   | Data Type  | Description                            |
-|---------------|------------|----------------------------------------|
-| `id`          | BIGINT     | Primary Key                            |
-| `user_id`     | BIGINT     | Foreign Key referencing the `user` table |
-| `content_id`  | BIGINT     | Foreign Key referencing the `news` table |
-| `comment_text`| TEXT       | The content of the comment             |
-| `createdAt`   | DATETIME   | Timestamp of when the comment was created|
+**`post` Table**
+
+| Column Name   | Data Type     | Description                                            |
+|---------------|---------------|--------------------------------------------------------|
+| `postId`      | INT           | Primary Key, auto-generated                            |
+| `groupId`     | INT           | The ID of the group the post belongs to              |
+| `userId`      | INT           | The ID of the user who created the post                |
+| `content`     | TEXT          | The content of the post                                |
+| `timestamp`   | DATETIME      | The time the post was created                          |
+
+**`post_like` Table**
+
+| Column Name   | Data Type  | Description                                     |
+|---------------|------------|-------------------------------------------------|
+| `likeId`      | INT        | Primary Key, auto-generated                     |
+| `userId`      | INT        | Foreign Key referencing the `user` table        |
+| `postId`      | INT        | Foreign Key referencing the `post` table        |
+
+*Unique constraint:* `uq_user_post_like` ensures a user can like a post only once.
+
+**`comment` Table**
+
+| Column Name   | Data Type  | Description                                     |
+|---------------|------------|-------------------------------------------------|
+| `commentId`   | INT        | Primary Key, auto-generated                     |
+| `postId`      | INT        | Foreign Key referencing the `post` table        |
+| `userId`      | INT        | Foreign Key referencing the `user` table        |
+| `content`     | TEXT       | The content of the comment                      |
+| `timestamp`   | DATETIME   | Timestamp of when the comment was created       |
+
+<img src="img_1.png" align="center" alt="content and news db" width="600"/>
 
 ### Service Interactions
 The Content and News Service interacts with other microservices in the following ways:
